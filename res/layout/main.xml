@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:gravity="center"
+	android:orientation="vertical">
+
+	<LinearLayout
+		android:layout_height="wrap_content"
+		android:layout_width="wrap_content"
+		android:orientation="horizontal"
+		android:textAlignment="center">
+
+		<TextView
+			android:layout_height="wrap_content"
+			android:text="MOPS"
+			android:textAppearance="?android:attr/textAppearanceLarge"
+			android:layout_width="wrap_content"/>
+
+	</LinearLayout>
+
+	<ScrollView
+		android:layout_height="match_parent"
+		android:layout_width="match_parent"
+		android:layout_weight="1.0"
+		android:id="@+id/mainScrollViewOutput">
+
+		<TextView
+			android:layout_height="match_parent"
+			android:textAppearance="?android:attr/textAppearanceMedium"
+			android:layout_width="match_parent"
+			android:id="@+id/mainTextViewOutput"/>
+
+	</ScrollView>
+
+	<LinearLayout
+		android:layout_height="wrap_content"
+		android:layout_width="wrap_content"
+		android:orientation="horizontal"
+		android:gravity="bottom">
+
+		<EditText
+			android:layout_height="wrap_content"
+			android:ems="10"
+			android:layout_width="wrap_content"
+			android:id="@+id/mainEditTextInput"/>
+
+		<Button
+			android:layout_height="wrap_content"
+			android:text="Send"
+			android:layout_width="wrap_content"
+			android:id="@+id/mainButtonSend"/>
+
+	</LinearLayout>
+
+</LinearLayout>
+
