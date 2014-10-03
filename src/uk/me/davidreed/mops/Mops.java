@@ -3,10 +3,10 @@ import java.util.*;
 
 public class Mops
 {
-	private int[] aS, aL, aT, aM, aK, aP;
-	private double[] aA, aR, aC, aE, aI, aG, aF, aQ;
+	private int[] aS, aL, aM, aK, aP;
+	private double[] aA, aR, aC, aE, aI, aG, aQ, aT, aF;
 	private String[] aY$, aP$, aS$;
-	private double S, P, Q;
+	private double S, P, Q, F;
 	private String N$;
 	private int N, W, X;
 	private Random B;
@@ -39,7 +39,8 @@ public class Mops
 		Command,
 		CurrentValues,
 		ProductionRequired,
-		RawMaterialOrder
+		RawMaterialOrder,
+		PrintWeekSummary
 	}
 		
 	public void Mops()
@@ -96,6 +97,9 @@ public class Mops
 			case RawMaterialOrder:
 				RawMaterialOrderResponse(input);
 				break;
+			case PrintWeekSummary:
+				PrintWeekSummaryResponse(input);
+				break;
 		}
 	}
 	
@@ -111,18 +115,19 @@ public class Mops
 	
 	private void Initialise()
 	{
-		aS = new int[33];
-		aR = new double[36]; // aR[2] = Raw Materials
-		aA = new double[33];
-		aL = new int[21];
-		aT = new int[33];
+		// All arrays are one index larger than required to support 1-based access. Index 0 is blank or zero.
+		aS = new int[34];
+		aR = new double[37]; // aR[2] = Raw Materials
+		aA = new double[34];
+		aL = new int[22]; // aL[21] = Holiday flag
+		aT = new double[34];
 		aM = new int[] {0, 400, 60, 40, 60, 150, 0, 0};
 		aY$ = new String[] {"", "     DAY", " EVENING", "SATURDAY", "  SUNDAY", "SUBCONTR"};
 		aC = new double[] {0.0, 4.0, 4.3, 4.4, 5.0, 4.4, 0.0, 0.0, 0.0};
 		aE = new double[] {0.0, 0.5, 1.0, 2.0, 3.0, 3.5, 0.0, 0.0};
 		aR[1]=2.5;
 		aI = new double[] {0.0, 0.02, 0.0, 0.0}; // aI[2] = Raw Materials
-		aG = new double[] {0.0, 0.04, 0.0, 0.0};
+		aG = new double[] {0.0, 0.04, 0.0, 0.0, 0.0};
 		aL[20] = 1;
 		aF = new double[] {0.0, 0.5, 1.0, 1.5, 2.0, 3.0, 4.5, 6.0, 8.0, 0.0};
 		aK = new int[] {
@@ -201,7 +206,7 @@ public class Mops
 		for (int K = 1; K <= 19; K++) aL[K] = 0;
 		for (int K = 13; K <= 33; K++) aA[K] = 0.0;
 		for (int K = 14; K <= 33; K++) aR[K] = 0.0;
-		for (int K = 1; K <= 33; K++) aT[K] = 0;
+		for (int K = 1; K <= 33; K++) aT[K] = 0.0;
 		CurrentState = MopsState.NewGame;
 	}
 	private void NewGameResponse(String response)
@@ -220,7 +225,7 @@ public class Mops
 			aR[1] = 0.0; // Clear current week's ?
 			B = new Random();
 			aE[7] = 0.0; aC[7] = 0.0; aR[3] = 0.0; aI[3] = 0.0; aG[3] = 0.0; aF[9] = 0.0; aC[8] = 0.0; aM[6] = 0;
-			for (int K = 1; K <= 5; K++) aP[K]= 0; // Clear ?
+			for (int K = 1; K <= 5; K++) aP[K]= 0; // Clear production values for the current week
 			if (W >= 16) SupplyAlterations();
 			Command();
 		}
@@ -268,7 +273,6 @@ public class Mops
 		{
 			case "H":
 				Help();
-				Command();
 				break;
 			case "R":
 				RawMaterialOrder();
@@ -322,11 +326,12 @@ public class Mops
 		Print("U - SIGNALS PRODUCTION FOR SUN. SHIFT");
 		Print("S - SIGNALS PRODUCTION FOR SUBCONTRACT");
 		Print("C - SIGNALS A PRODUCTION SUBMISSION");
+		Command();
 	}
 	
 	private void CurrentValues()
 	{
-		for (int K = 0; K < 5; K++) {
+		for (int K = 1; K <= 5; K++) {
 			Print("");
 			Print(aY$[K] + " SHIFT " + aP[K]);
 			Print("MATERIAL ORDER " + aR[2]);
@@ -350,6 +355,8 @@ public class Mops
 				break;
 			case "C":
 				CalculateAvailabilityOfSubcontracting();
+				ProductionAndQualityControl();
+				PrintWeekSummary();
 				break;
 			default:
 				
@@ -373,68 +380,76 @@ public class Mops
 				}
 			}
 		}
-		ProductionAndQualityControl();
 	}
 	
 	private void ProductionAndQualityControl()
 	{
-		float rand;
+		float rand = B.nextFloat();
+		boolean blnQualityLossFactors = false;
+		boolean blnProductionLossFactors = false;
+		
 		P = 0;
 		Q = 0;
 		if (W < 14) {
 			MakeAdjustments();
 		} else {
+			// Only check loss factors outside of holidays
 			if (W < 25 || W > 26)
 			{
-				rand = B.nextFloat();
 				if (rand >= 0.25) {
-					// Quality Loss Factors
-					if (rand < 0.3 && aL[5] < 4) {
-						Q = aQ[1];
-						aL[5]++;
-					}
-					if (rand < 0.35 && aL[6] < 4) {
-						Q = aQ[2];
-						aL[6]++;
-					}
-					if (rand < 0.445 && aL[7] < 4) {
-						Q = aQ[3];
-						aL[7]++;
-					}
+					blnQualityLossFactors = true;
 				} else {
 					// Strike Conditions
 					if (aL[10] == 1) {
 						if (aL[17] == 1) {
-							// Production Loss Factors
-							if (rand <= 0.045 && aL[8] < 4) {
-								P = aA[1];
-								aL[8]++;
-							}
-							if (rand <= 0.12 && aL[9] < 4) {
-								P = aA[2];
-								aL[9]++;						
-							}
-							if (rand <= 0.15 && aL[11] < 4) {
-								P = aA[4];
-								aL[11]++;						
-							}
-							if (rand <= 0.245 && aL[15] < 4) {
-								P = aA[5];
-								aL[15]++;						
-							}
+							blnProductionLossFactors = true;
 						} else {
 							aL[17] = 1;
 							if (B.nextDouble() < (0.5 / 7.0)) P = aA[3];
 						}
 					} else {
 						if (rand < 0.03) {
-							P= aA[3];
+							P = aA[3];
 							aL[10] = 1;
 						} else {
-							// Production Loss Factors!!!!!!
+							blnProductionLossFactors = true;
 						}
 					}
 				}
+			}
+			if (blnQualityLossFactors) {
+				// Quality Loss Factors
+				if (rand < 0.3 && aL[5] < 4) {
+					Q = aQ[1];
+					aL[5]++;
+				}
+				if (rand < 0.35 && aL[6] < 4) {
+					Q = aQ[2];
+					aL[6]++;
+				}
+				if (rand < 0.445 && aL[7] < 4) {
+					Q = aQ[3];
+					aL[7]++;
+				}
+			}
+			if (blnProductionLossFactors) {
+				// Production Loss Factors
+				if (rand <= 0.045 && aL[8] < 4) {
+					P = aA[1];
+					aL[8]++;
+				}
+				if (rand <= 0.12 && aL[9] < 4) {
+					P = aA[2];
+					aL[9]++;						
+				}
+				if (rand <= 0.15 && aL[11] < 4) {
+					P = aA[4];
+					aL[11]++;						
+				}
+				if (rand <= 0.245 && aL[15] < 4) {
+					P = aA[5];
+					aL[15]++;						
+				}				
 			}
 			QuantityCalculations();
 		}
@@ -446,6 +461,97 @@ public class Mops
 	}
 	
 	private void MakeAdjustments() {
+		for (int K = 1; K <= 4; K++) {
+			aP[K] = (int)(aP[K] * (1 - P - Q));
+		}
+		aM[7] = aP[1] + aP[2] + aP[3] + aP[4] + aP[5]; // Sum of all production values for the week.
+		aR[W+N] += aR[2];
+		if (aL[10] == 1 || aL[10] == 2 || W == 25 || W == 26) {
+			aC[7] = 600;
+		} else {
+			for (int K = 2; K <= 5; K++) {
+				aC[7] += aP[K] * aC[K];
+			}
+			aC[7] += 1600;
+		}
+		if (aP[5] != 0) { // if P[5] ?????
+			aC[7] += 100;
+		}
+		if (Q != 0) { // if Q ?????
+			aI[2] += aR[W] - aM[6];
+		} else {
+			aI[2] += aR[W] - aM[7];
+		}
+		aG[4] = aG[2];
+		aG[2] += aM[7];
+		if (aS[W] <= aG[2]) {
+			aG[2] -= aS[W];
+			aA[W] = aS[W];
+			F = 0;
+		} else {
+			aA[W] = aG[2];
+			aG[2]= 0;
+			F = aS[W] - aA[W];
+			// Shortage Penalties
+			if (F < 11) {
+				aF[9] = (int)(((F * aF[1]) + 0.9) * 4.45);
+			} else {
+				for (int K = 1; K <= 6; K++) {
+					if (F <= K * 50) {
+						aF[9] = (int)(((F * aF[K + 1]) + 0.9) * 4.45);
+					} else {
+						aF[9] = (int)(((F * aF[8]) + 0.9) * 4.45);
+					}
+				}
+			}
+		}
+		// Under production penalties
+		if (W < 25 && W > 26) {
+			aM[8] = aM[7] - aP[5]; // Production values for the current week minus the production value for the 5th day
+			if (aM[8] >= 349 && aM[8] < 396) {
+				aE[7] = (400 - aM[8]) * aE[1];
+			}
+			if (aM[8] >= 299 && aM[8] < 349) {
+				aE[7] = (400 - aM[8]) * aE[2];
+			}
+			if (aM[8] >= 249 && aM[8] < 299) {
+				aE[7] = (400 - aM[8]) * aE[3];
+			}
+			if (aM[8] < 249) {
+				aE[7] = (400 - aM[8]) * aE[4];
+			}
+		}
+		// Calculation totals
+		aG[3] = aG[2] * aG[1];
+		aR[3] = aR[W] * aR[1];
+		aI[3] = aI[2] * aI[1];
+		aC[8] = (600.9 + (1.05 * aA[W]));
+		aT[1] = aC[7] + aR[3] + aI[3] + aG[3] + aC[8] + aE[7];
+		aT[W] = aA[W] * 13.5;
+		if (aR[2] != 0) {
+			aT[1] += 30;
+		}
+		aT[5] += aS[W];
+		aT[6] += aA[W];
+		aT[7] = 0.01 * (int)(100 * (aT[7] + aT[1]));
+		aT[8] += aF[9];
+		aT[9] += aT[W];
+		aT[10] = 0.01 * (int)(100 * (aT[9] + aT[7]));
+		aT[11] += aC[8];
+	}
+	
+	private void PrintWeekSummary()
+	{
+		Print("      WEEKLY REPORT  WEEK " + Integer.toString(W));
+		Print("IN THE WEEK YOU HAVE JUST SUBMITTED");
+		Print("THE FOLLOWING OCCURRED");
+		Print("");
+		Print("");
+		Print("");
+		Print("PRESS THE SPACE BAR TO CONTINUE");
+		MopsState = MopsState.PrintWeekSummary;
+	}
+	private void PrintWeekSummaryResponse(){
 		
 	}
 	
@@ -456,13 +562,13 @@ public class Mops
 		}
 		Print("CUMULATIVE ANALYSIS WEEK " + Integer.toString(W));
 		Print("TOTAL:");
-		Print("       SALES MET       " + Integer.toString(aT[5]));
-		Print("       SALES DEMAND    " + Integer.toString(aT[4]));
-		Print("CUSTOMER SHORTAGES     " + Integer.toString(aT[4] - aT[5]));
-		Print("CUMULATIVE PROD COSTS  " + Integer.toString(aT[6]));
-		Print("CUMULATIVE IND. COSTS  " + Integer.toString(aT[10]));
-		Print("TOTAL SALES REVENUE    " + Integer.toString(aT[8]));
-		Print("       PROFIT          " + Integer.toString(aT[9]));
+		Print("       SALES MET       " + Double.toString(aT[5]));
+		Print("       SALES DEMAND    " + Double.toString(aT[4]));
+		Print("CUSTOMER SHORTAGES     " + Double.toString(aT[4] - aT[5]));
+		Print("CUMULATIVE PROD COSTS  " + Double.toString(aT[6]));
+		Print("CUMULATIVE IND. COSTS  " + Double.toString(aT[10]));
+		Print("TOTAL SALES REVENUE    " + Double.toString(aT[8]));
+		Print("       PROFIT          " + Double.toString(aT[9]));
 	}
 	
 	private void ProductionRequired()
@@ -510,7 +616,7 @@ public class Mops
 	
 	private void HolidayCheck() {
 		aL[21] = 0; // turn off holiday flag
-		if ((W >= 25 || W <= 26) && X != 5) {
+		if (W >= 25 && W <= 26 && X != 5) {
 			Print("HOLIDAYS: ONLY SUBCONTRACTING ALLOWED");
 			aL[21] = 1; // turn on holiday flag for week 25/26 (non-subcontracting only)
 		}
