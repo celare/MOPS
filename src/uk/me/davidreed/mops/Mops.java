@@ -2,7 +2,7 @@ package uk.me.davidreed.mops;
 import java.util.*;
 
 public class Mops
-{
+	{
 	private int[] aS, aL, aM, aK, aP;
 	private double[] aA, aR, aC, aE, aI, aG, aQ, aT, aF;
 	private String[] aY$, aP$, aS$;
@@ -549,9 +549,9 @@ public class Mops
 		Print("");
 		Print("");
 		Print("PRESS THE SPACE BAR TO CONTINUE");
-		MopsState = MopsState.PrintWeekSummary;
+		CurrentState = MopsState.PrintWeekSummary;
 	}
-	private void PrintWeekSummaryResponse(){
+	private void PrintWeekSummaryResponse(String response){
 		
 	}
 	

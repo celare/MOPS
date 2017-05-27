@@ -44,13 +44,10 @@
 			android:layout_height="wrap_content"
 			android:ems="10"
 			android:layout_width="wrap_content"
+			android:singleLine="true"
+			android:hint="Enter Command"
+			android:inputType="text"
 			android:id="@+id/mainEditTextInput"/>
-
-		<Button
-			android:layout_height="wrap_content"
-			android:text="Send"
-			android:layout_width="wrap_content"
-			android:id="@+id/mainButtonSend"/>
 
 	</LinearLayout>
 

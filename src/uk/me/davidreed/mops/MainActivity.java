@@ -5,13 +5,13 @@ import android.os.*;
 import android.view.*;
 import android.widget.*;
 import android.view.View.*;
+import android.widget.TextView.*;
 
 public class MainActivity extends Activity
 {
 	private Mops M;
 	private TextView mainTextViewOutput;
 	private EditText mainEditTextInput;
-	private Button mainButtonSend;
 	private ScrollView mainScrollViewOutput;
 	
     /** Called when the activity is first created. */
@@ -21,34 +21,68 @@ public class MainActivity extends Activity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
 		
+		// Grab references to all UI controls
 		mainTextViewOutput = (TextView)findViewById(R.id.mainTextViewOutput);
 		mainEditTextInput = (EditText)findViewById(R.id.mainEditTextInput);
-		mainButtonSend = (Button)findViewById(R.id.mainButtonSend);
 		mainScrollViewOutput = (ScrollView)findViewById(R.id.mainScrollViewOutput);
 		
+		// Create new MOPS engine but don't start it until we have hooked up all listeners
 		M = new Mops();
+		
+		// Listen for responses to commands and display them
 		M.setOnMopsOutputListener(new Mops.OnMopsOutputListener() {
 				@Override
 				public void OnMopsOutput(String output) {
-					mainTextViewOutput.setText(mainTextViewOutput.getText().toString() + "\n" + output);
-					mainScrollViewOutput.fullScroll(View.FOCUS_DOWN);
+					displayText(output);
 				}
 			}
 		);
+		
+		// Listen for the enter key and send the command
+		mainEditTextInput.setOnEditorActionListener(new OnEditorActionListener()
+			{
+				@Override
+				public boolean onEditorAction(TextView v, int actionId, KeyEvent event)
+				{
+					boolean handled = false;
+					if (event.getKeyCode() == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN)
+					{
+						displayText(mainEditTextInput.getText().toString());
+						sendText(mainEditTextInput.getText().toString());
+						handled = true;
+					}
+					return handled;
+				}
+			});
+		
+		// We're all hooked up so start the MOPS engine
 		M.Start();
 	}
-
-	@Override
-	protected void onStart()
+	
+	private void displayText(String text) {
+		// Add the text response to the text view and scroll to bottom so it is visible
+		mainTextViewOutput.setText(mainTextViewOutput.getText().toString() + "\n" + text);
+		// fullScroll doesn't work unless posted in to the UI message queue via a runnable!!!
+		mainScrollViewOutput.post(new Runnable() {
+				@Override
+				public void run() {
+					mainScrollViewOutput.fullScroll(ScrollView.FOCUS_DOWN);
+				}
+			});
+	}
+	
+	private void sendText(String text)
 	{
-		super.onStart();
-		mainButtonSend.setOnClickListener(new OnClickListener() {
-			@Override
-			public void onClick(View p1) {
-				M.Send(mainEditTextInput.getText().toString());
-				mainEditTextInput.setText("");
-			}
-		});		
+		// Send the text command to the MOPS engine and clear the command text
+		M.Send(text);
+		mainEditTextInput.setText("");
+		// requestFocus doesn't work unless posted in to the UI message queue via a runnable!!!
+		mainEditTextInput.post(new Runnable() {
+				@Override
+				public void run() {
+					mainEditTextInput.requestFocus();
+				}
+			});
 	}
 }
 
