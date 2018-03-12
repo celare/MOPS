@@ -116,9 +116,9 @@ public class Mops
 	private void Initialise()
 	{
 		// All arrays are one index larger than required to support 1-based access. Index 0 is blank or zero.
-		aS = new int[34];
+		aS = new int[34]; // Demand quantity
 		aR = new double[37]; // aR[2] = Raw Materials
-		aA = new double[34];
+		aA = new double[34]; // Demand satisfied
 		aL = new int[22]; // aL[21] = Holiday flag
 		aT = new double[34];
 		aM = new int[] {0, 400, 60, 40, 60, 150, 0, 0};
@@ -126,8 +126,8 @@ public class Mops
 		aC = new double[] {0.0, 4.0, 4.3, 4.4, 5.0, 4.4, 0.0, 0.0, 0.0};
 		aE = new double[] {0.0, 0.5, 1.0, 2.0, 3.0, 3.5, 0.0, 0.0};
 		aR[1]=2.5;
-		aI = new double[] {0.0, 0.02, 0.0, 0.0}; // aI[2] = Raw Materials
-		aG = new double[] {0.0, 0.04, 0.0, 0.0, 0.0};
+		aI = new double[] {0.0, 0.02, 0.0, 0.0}; // aI[2] = Raw materials stock
+		aG = new double[] {0.0, 0.04, 0.0, 0.0, 0.0}; // aG[2] = Finished goods stock
 		aL[20] = 1;
 		aF = new double[] {0.0, 0.5, 1.0, 1.5, 2.0, 3.0, 4.5, 6.0, 8.0, 0.0};
 		aK = new int[] {
@@ -545,10 +545,48 @@ public class Mops
 		Print("      WEEKLY REPORT  WEEK " + Integer.toString(W));
 		Print("IN THE WEEK YOU HAVE JUST SUBMITTED");
 		Print("THE FOLLOWING OCCURRED");
+		// Press space bar to continue
 		Print("");
 		Print("");
 		Print("");
-		Print("PRESS THE SPACE BAR TO CONTINUE");
+		if (P > 0) Print("PRODUCTIVITY FACTOR: " + Double.toString((1 - P) * 100) + "%");
+		if (Q > 0) Print("QUALITY LOSS FACTOR: " + Double.toString((1 - Q) * 100) + "%");
+		if (aL[10] == 1) {
+			Print(aP$[3]);
+			aP$[3] = "";
+		}
+		if (aL[10] == 1 && aL[17] == 1) {
+			Print(aP$[4]);
+			aP$[4] = "";
+		}
+		Print("PRODUCTION QUANTITIES:");
+		for (int K = 1; K <= 4; K++) {
+			if (aP[K] > 0) Print("    " + aY$[K] + "  " + Integer.toString(aP[K]));
+		}
+		if (aL[13] > 0 && aP[5] == 0) Print ("SUBCONTRACTING FAILED TO DELIVER");
+		if (aP[5] > 0) Print("  " + aY$[5] + "  " + aP[5]);
+		Print("");
+		Print("TOTAL PRODUCTION        " + aM[7]);
+		Print("GOODS INVENTORY BEFORE DEMAND " + Double.toString(aG[4] + aM[7]));
+		// Press space bar to continue
+		Print("");
+		Print("RAW MATERIAL RECEIVED " + Double.toString(aR[W]));
+		if (N==3) {
+			Print(aS$[3]);
+		} else {
+			Print(aS$[5]);
+		}
+		Print(aS$[7]);
+		Print("SCHEDULED DELIVERY NEXT WEEK  " + Double.toString(aR[W+1]));
+		// Press space bar to continue
+		Print("");
+		Print("");
+		Print("DEMAND QUANTITY WAS  " + Integer.toString(aS[W]));
+		Print("DEMAND SATISFIED WAS " + Double.toString(aA[W]));
+		Print("FINISHED GOODS STOCK " + Double.toString(aG[2]));
+		if (F > 0) Print("CUSTOMER SHORTAGES INCURRED WERE " + Double.toString(F));
+		Print("RECORD THIS DATA");
+		// Press space bar to continue
 		CurrentState = MopsState.PrintWeekSummary;
 	}
 	private void PrintWeekSummaryResponse(String response){

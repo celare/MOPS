@@ -6,6 +6,7 @@ import android.view.*;
 import android.widget.*;
 import android.view.View.*;
 import android.widget.TextView.*;
+import android.view.inputmethod.*;
 
 public class MainActivity extends Activity
 {
@@ -45,11 +46,15 @@ public class MainActivity extends Activity
 				public boolean onEditorAction(TextView v, int actionId, KeyEvent event)
 				{
 					boolean handled = false;
-					if (event.getKeyCode() == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN)
+					
+					/*if (event.getKeyCode() == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN)*/
+					switch (actionId)
 					{
-						displayText(mainEditTextInput.getText().toString());
-						sendText(mainEditTextInput.getText().toString());
-						handled = true;
+						case EditorInfo.IME_ACTION_DONE:
+							displayText(mainEditTextInput.getText().toString());
+							sendText(mainEditTextInput.getText().toString());
+							handled = true;
+							break;
 					}
 					return handled;
 				}
